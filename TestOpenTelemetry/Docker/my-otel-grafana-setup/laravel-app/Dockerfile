@@ -25,9 +25,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy Laravel app code to the container
 COPY . .
 
-# Set correct permissions for Laravel
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure the storage and bootstrap/cache directories exist and set correct permissions for Laravel
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose port 80
 EXPOSE 80
