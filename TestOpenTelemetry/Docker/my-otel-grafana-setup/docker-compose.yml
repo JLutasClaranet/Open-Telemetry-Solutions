@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   otel-collector:
@@ -98,7 +98,7 @@ services:
     ports:
       - "8080:80"       # Laravel acessível em http://localhost:8080
     volumes:
-      - ./laravel-app:/var/www/html
+      - ./laravel-app/laravel:/var/www/html
       - ./laravel-app/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./laravel-app/logs/nginx:/var/log/nginx
     depends_on:
