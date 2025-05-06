@@ -6,18 +6,19 @@ use Illuminate\Support\ServiceProvider;
 use OpenTelemetry\API\Trace\TracerProviderInterface;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Trace\SpanProcessor\BatchSpanProcessor;
-use OpenTelemetry\Exporter\OTLP\SpanExporter;
+use OpenTelemetry\Contrib\Otlp\SpanExporterFactory;
 use OpenTelemetry\SDK\Resource\ResourceInfo;
 use OpenTelemetry\SDK\Common\Attribute\Attributes;
-use OpenTelemetry\SDK\Common\Time\Clock;
-use OpenTelemetry\Exporter\OTLP\LogsExporter;
+use OpenTelemetry\SDK\Common\Attribute\AttributesFactory;
+use OpenTelemetry\API\Common\Time\Clock;
+use OpenTelemetry\Contrib\Otlp\LogsExporter;
 use OpenTelemetry\SDK\Logs\Processor\BatchLogRecordProcessor;
 use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\SDK\Metrics\MeterProvider;
 use OpenTelemetry\SDK\Metrics\MetricReader\PeriodicMetricReader;
-use OpenTelemetry\Exporter\OTLP\MetricExporter; // Corrected import for MetricExporter
+use OpenTelemetry\Contrib\Otlp\MetricExporter; // Corrected import for MetricExporter
 use OpenTelemetry\SDK\Common\Export\TransportInterface;
-use OpenTelemetry\Exporter\OTLP\OtlpHttpTransportFactory;
+use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
 use OpenTelemetry\SDK\Common\Instrumentation\InstrumentationScopeFactory;
 
 class ObservabilityServiceProvider extends ServiceProvider
@@ -31,10 +32,8 @@ class ObservabilityServiceProvider extends ServiceProvider
         ]));
 
         // === Tracing ===
-        // Create the OTLP SpanExporter
-        $traceExporter = new SpanExporter(
-            $this->createTransport()
-        );
+        // Create the SpanExporter using the SpanExporterFactory
+        $traceExporter = (new SpanExporterFactory())->create();
 
         // Get the default ClockInterface object using Clock::getDefault() method
         $clock = Clock::getDefault();  // Correct method to get ClockInterface
@@ -53,7 +52,7 @@ class ObservabilityServiceProvider extends ServiceProvider
             $maxExportBatchSize
         );
 
-        // Create the TracerProvider
+        // Create the TracerProvider (do not use named parameter)
         $tracerProvider = new TracerProvider(
             $batchProcessor // This is the first parameter
         );
@@ -72,13 +71,16 @@ class ObservabilityServiceProvider extends ServiceProvider
         $logProcessor = new BatchLogRecordProcessor(
             $logExporter, 
             $clock, 
-            $scheduledDelayMillis,  // Example option for delay
+            $scheduledDelayMillis = 1000,  // Example option for delay
             $maxQueueSize = 2048,          // Example option for queue size
             $maxExportBatchSize = 512      // Example option for max batch size
         );
 
         // Create an instance of AttributesFactory (implements AttributesFactoryInterface)
-        $instrumentationScopeFactory = new InstrumentationScopeFactory();
+        $attributesFactory = new AttributesFactory();
+
+        // Create InstrumentationScopeFactory with the attributesFactory (not ResourceInfo)
+        $instrumentationScopeFactory = new InstrumentationScopeFactory($attributesFactory);
 
         // Create LoggerProvider and pass the logProcessor and instrumentationScopeFactory as arguments
         $loggerProvider = new LoggerProvider($logProcessor, $instrumentationScopeFactory);
@@ -114,7 +116,10 @@ class ObservabilityServiceProvider extends ServiceProvider
     private function createTransport(): TransportInterface
     {
         // Use the OtlpHttpTransportFactory to create the transport
-        return OtlpHttpTransportFactory::create(
+        $factory = new OtlpHttpTransportFactory();
+
+        // Create transport for logs with proper parameters
+        return $factory->create(
             'http://otel-collector:4318/v1/logs',  // Endpoint for logs
             'application/x-protobuf',              // Content type (assuming Protobuf is used)
             [],                                    // Custom headers (empty in this case)
