@@ -85,7 +85,7 @@ services:
       dockerfile: Dockerfile
     container_name: laravel_app
     volumes:
-      - ./laravel-app:/var/www/html
+      - ./laravel-app/laravel:/var/www/html
       - ./laravel-app/logs/app:/var/log/app
     depends_on:
       - laravel_mysql
