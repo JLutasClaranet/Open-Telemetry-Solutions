@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         //
+        $middleware->append(ObservabilityMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
