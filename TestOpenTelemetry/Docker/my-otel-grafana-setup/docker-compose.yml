@@ -81,7 +81,7 @@ services:
   # --- AQUI COMEÇA O STACK LARAVEL ---
   laravel_app:
     build:
-      context: ./laravel-app
+      context: ./laravel
       dockerfile: Dockerfile
     container_name: laravel_app
     volumes:
