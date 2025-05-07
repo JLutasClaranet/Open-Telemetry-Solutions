@@ -100,7 +100,7 @@
                 <img src="https://img.icons8.com/ios-filled/50/ffffff/stack.png" class="icon" alt="Context Trace Icon"> Trigger Manual Context Trace
             </button>
             <button id="healthButton" class="button">
-                <img src="https://img.icons8.com/ios-filled/50/ffffff/heartbeat.png" class="icon" alt="Health Check Icon"> Health Check
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/heart-with-pulse--v1.png" class="icon" alt="heart-with-pulse--v1 icon"> Health Check
             </button>
         </div>
 
