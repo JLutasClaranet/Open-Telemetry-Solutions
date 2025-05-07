@@ -18,17 +18,19 @@ RUN apt-get update && apt-get install -y \
 # Install Composer from Composer's official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy Laravel application files
+# Copy the entire application at once
 COPY . .
 
-
-
-# Install Composer dependencies (you must have composer.json and composer.lock)
+# Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
+# Generate application key and optimize
+RUN cp .env.example .env && \
+    php artisan key:generate && \
+    php artisan optimize
+
 # Set correct permissions
-RUN mkdir -p storage bootstrap/cache \
-    && chown -R www-data:www-data . \
+RUN chown -R www-data:www-data . \
     && chmod -R 775 storage bootstrap/cache
 
 # Run PHP-FPM
