@@ -3,22 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+use App\Http\Controllers\ObservabilityController;
 
-Route::get('/trigger', function () {
-    Log::info('Triggered manual span');
-    return ['message' => 'Manual trace span sent'];
-});
-
-Route::get('/trigger-context', function () {
-    Log::info('Triggered context trace', ['user.id' => 12345, 'session.id' => 'abcde']);
-    return ['message' => 'Manual trace with context sent'];
-});
-
-Route::get('/health', fn() => ['status' => 'healthy']);
-
+Route::get('/', [ObservabilityController::class, 'root']);
+Route::get('/trigger', [ObservabilityController::class, 'trigger']);
+Route::get('/trigger-context', [ObservabilityController::class, 'triggerContext']);
+Route::get('/health', [ObservabilityController::class, 'health']);
 Route::get('/observability', function () {
     return view('observability'); // This loads the HTML page
 });
