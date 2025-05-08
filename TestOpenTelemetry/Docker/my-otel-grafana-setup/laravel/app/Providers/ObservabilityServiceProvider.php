@@ -2,134 +2,76 @@
 
 namespace App\Providers;
 
+//basic Ones
 use Illuminate\Support\ServiceProvider;
 use OpenTelemetry\API\Trace\TracerProviderInterface;
+use OpenTelemetry\Context\Context;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\SDK\Common\Time\ClockFactory;
+
+//related to Resource
+use OpenTelemetry\SDK\Resource\ResourceInfo;
+use OpenTelemetry\SDK\Resource\ResourceInfoFactory;
+use OpenTelemetry\SemConv\ResourceAttributes;
+use OpenTelemetry\SDK\Common\Attribute\Attributes;
+
+//Exporters
+
+//Traces
+use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
+use OpenTelemetry\Contrib\Otlp\SpanExporter;
 use OpenTelemetry\SDK\Trace\TracerProvider;
 use OpenTelemetry\SDK\Trace\SpanProcessor\BatchSpanProcessor;
-use OpenTelemetry\Contrib\Otlp\SpanExporterFactory;
-use OpenTelemetry\SDK\Resource\ResourceInfo;
-use OpenTelemetry\SDK\Common\Attribute\Attributes;
-use OpenTelemetry\SDK\Common\Attribute\AttributesFactory;
-use OpenTelemetry\API\Common\Time\Clock;
+//Logs
+use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\Contrib\Otlp\LogsExporter;
 use OpenTelemetry\SDK\Logs\Processor\BatchLogRecordProcessor;
-use OpenTelemetry\SDK\Logs\LoggerProvider;
-use OpenTelemetry\SDK\Metrics\MeterProvider;
-use OpenTelemetry\SDK\Metrics\MetricReader\PeriodicMetricReader;
-use OpenTelemetry\Contrib\Otlp\MetricExporter; // Corrected import for MetricExporter
-use OpenTelemetry\SDK\Common\Export\TransportInterface;
-use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
 use OpenTelemetry\SDK\Common\Instrumentation\InstrumentationScopeFactory;
+use OpenTelemetry\SDK\Common\Attribute\AttributesFactory;
+
+
 
 class ObservabilityServiceProvider extends ServiceProvider
 {
-    public function register()
+    public function register(): void
     {
-        // === Resource definition ===
-        $resource = ResourceInfo::create(Attributes::create([  // Using the correct Attributes class here
-            'service.name' => 'laravel-service',
-            'organization.name' => 'XPTO Corp',
-        ]));
+        $clock = ClockFactory::getDefault();
+        //resource
+        $resource = ResourceInfoFactory::defaultResource()->merge(ResourceInfo::create(Attributes::create([
+            ResourceAttributes::SERVICE_NAMESPACE => 'XPTO Corp',
+            ResourceAttributes::SERVICE_NAME => 'laravel-app',
+            ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => 'development',
+        ])));
 
-        // === Tracing ===
-        // Create the SpanExporter using the SpanExporterFactory
-        $traceExporter = (new SpanExporterFactory())->create();
+        //trace transporter
+        $traceTransport = (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/traces', 'application/x-protobuf');
+        // // Tracer setup
 
-        // Get the default ClockInterface object using Clock::getDefault() method
-        $clock = Clock::getDefault();  // Correct method to get ClockInterface
+        $traceExporter = new SpanExporter($traceTransport);
 
-        // Get options for the BatchSpanProcessor directly from the method
-        $scheduledDelayMillis = 1000;
-        $maxQueueSize = 2048;
-        $maxExportBatchSize = 512;
+        // TracerProvider with correct argument order
+        $spanProcessor = new BatchSpanProcessor($traceExporter, $clock);
+        $tracerProvider = new TracerProvider($spanProcessor, null, $resource);
+        Globals::tracerProvider($tracerProvider);
 
-        // Create the BatchSpanProcessor with the clock and additional options
-        $batchProcessor = new BatchSpanProcessor(
-            $traceExporter, 
-            $clock, 
-            $scheduledDelayMillis, 
-            $maxQueueSize, 
-            $maxExportBatchSize
-        );
+        // Logger setup
+        $logsTransport = (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/logs', 'application/x-protobuf');
+        $logExporter = new LogsExporter($logsTransport);
 
-        // Create the TracerProvider (do not use named parameter)
-        $tracerProvider = new TracerProvider(
-            $batchProcessor // This is the first parameter
-        );
+       
+        // Processor requires clock
+        $logProcessor = new BatchLogRecordProcessor($logExporter, $clock);
 
-        // Register the TracerProviderInterface in the container
-        $this->app->singleton(TracerProviderInterface::class, fn () => $tracerProvider);
-
-        // === Logging ===
-        // Set up transport for LogsExporter using the OtlpHttpTransportFactory
-        $logTransport = $this->createTransport();
-
-        // Create LogsExporter with the transport
-        $logExporter = new LogsExporter($logTransport);
-
-        // Directly pass the configuration options instead of using BatchLogProcessorOptions
-        $logProcessor = new BatchLogRecordProcessor(
-            $logExporter, 
-            $clock, 
-            $scheduledDelayMillis = 1000,  // Example option for delay
-            $maxQueueSize = 2048,          // Example option for queue size
-            $maxExportBatchSize = 512      // Example option for max batch size
-        );
-
-        // Create an instance of AttributesFactory (implements AttributesFactoryInterface)
+        // Create an AttributesFactory instance
         $attributesFactory = new AttributesFactory();
-
-        // Create InstrumentationScopeFactory with the attributesFactory (not ResourceInfo)
         $instrumentationScopeFactory = new InstrumentationScopeFactory($attributesFactory);
-
-        // Create LoggerProvider and pass the logProcessor and instrumentationScopeFactory as arguments
-        $loggerProvider = new LoggerProvider($logProcessor, $instrumentationScopeFactory);
-
-        // Register logger in the container
-        $this->app->singleton('otel.logger', fn () => $loggerProvider->getLogger('laravel-app'));
-
-        // === Metrics ===
-        // Use the OtlpHttpTransportFactory to create the transport
-        $metricTransport = $this->createTransport();
-
-        // Create MetricExporter using the transport
-        $metricExporter = new MetricExporter($metricTransport);
-
-        $reader = new PeriodicMetricReader($metricExporter);
-        $meterProvider = new MeterProvider(
-            metricReaders: [$reader],
-            resourceInfo: $resource
-        );
-        $this->app->singleton(MeterProvider::class, fn () => $meterProvider);
+        // Logger provider with resource
+        $loggerProvider = new LoggerProvider($logProcessor,$instrumentationScopeFactory, $resource);
+        Globals::loggerProvider($loggerProvider);
     }
 
-    public function boot()
+    public function boot(): void
     {
-        // Optional post-registration actions can go here
-    }
-
-    /**
-     * Create the transport for sending logs (likely an HTTP transport).
-     * 
-     * @return TransportInterface The transport interface
-     */
-    private function createTransport(): TransportInterface
-    {
-        // Use the OtlpHttpTransportFactory to create the transport
-        $factory = new OtlpHttpTransportFactory();
-
-        // Create transport for logs with proper parameters
-        return $factory->create(
-            'http://otel-collector:4318/v1/logs',  // Endpoint for logs
-            'application/x-protobuf',              // Content type (assuming Protobuf is used)
-            [],                                    // Custom headers (empty in this case)
-            null,                                  // Compression (default to none)
-            10.0,                                  // Timeout in seconds
-            100,                                   // Retry delay in milliseconds
-            3,                                     // Max retries
-            null,                                  // CA certificate
-            null,                                  // SSL certificate
-            null                                   // SSL key
-        );
+        // Nothing here for now
     }
 }
