@@ -43,6 +43,7 @@ class ObservabilityServiceProvider extends ServiceProvider
             ResourceAttributes::SERVICE_NAMESPACE => 'XPTO Corp',
             ResourceAttributes::SERVICE_NAME => 'laravel-app',
             ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => 'development',
+            'organization.name' => 'XPTO Corp',
         ])));
 
         //trace transporter
