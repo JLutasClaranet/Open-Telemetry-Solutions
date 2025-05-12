@@ -4,10 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use OpenTelemetry\API\Trace\TracerProviderInterface;
 use OpenTelemetry\API\Trace\SpanKind;
-use OpenTelemetry\API\Trace\Span;
-use OpenTelemetry\Context\Context;
 use OpenTelemetry\API\Globals;
 use Illuminate\Support\Facades\Log;
 
