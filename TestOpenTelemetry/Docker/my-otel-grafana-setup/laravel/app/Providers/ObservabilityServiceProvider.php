@@ -32,9 +32,6 @@ use OpenTelemetry\SDK\Logs\Processor\BatchLogRecordProcessor;
 use OpenTelemetry\SDK\Metrics\MeterProvider;
 use OpenTelemetry\SDK\Metrics\MetricReader\ExportingReader;
 use OpenTelemetry\Contrib\Otlp\MetricExporter;
-use OpenTelemetry\SDK\Common\Export\Stream\StreamTransportFactory;
-
-
 
 class ObservabilityServiceProvider extends ServiceProvider
 {
