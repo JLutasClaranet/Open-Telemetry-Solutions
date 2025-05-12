@@ -77,7 +77,7 @@ class ObservabilityServiceProvider extends ServiceProvider
         //METRICS
         $reader = new ExportingReader(
             new MetricExporter(
-                (new StreamTransportFactory())->create('http://otel-collector:4318/v1/metrics', 'application/x-protobuf')
+                (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/metrics', 'application/x-protobuf')
             )
         );
         
