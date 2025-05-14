@@ -22,16 +22,18 @@ check_prerequisites() {
 # Function to install the Docker Compose configuration
 install() {
     echo "Installing $APP_NAME..."
-    
+
     if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
         echo "Error: $DOCKER_COMPOSE_FILE not found!"
         exit 1
     fi
 
     sudo mkdir -p "$INSTALL_DIR"
-    sudo cp "$DOCKER_COMPOSE_FILE" "$INSTALL_DIR"
-    sudo chmod +x "$INSTALL_DIR/$DOCKER_COMPOSE_FILE"
-    echo "Docker Compose file installed at $INSTALL_DIR."
+
+    # Copy everything from the current folder to the install directory
+    sudo cp -r ./* "$INSTALL_DIR"
+
+    echo "All necessary files copied to $INSTALL_DIR."
     echo "Installation complete. Use './make-install.sh start' to launch the application."
 }
 
