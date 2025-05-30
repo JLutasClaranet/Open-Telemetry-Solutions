@@ -9,25 +9,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     zip \
     unzip \
-    sqlite3 \
-    libsqlite3-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
-    && docker-php-ext-install pdo pdo_mysql pdo_sqlite zip mbstring exif pcntl
+    && docker-php-ext-install pdo pdo_mysql zip mbstring exif pcntl
 
 # Install Composer from Composer's official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copy the entire application at once
 COPY . .
-
-# Create database.sqlite file for SQLite
-RUN mkdir -p database && \
-    touch database/database.sqlite && \
-    chown -R www-data:www-data database && \
-    chmod -R 775 database
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
