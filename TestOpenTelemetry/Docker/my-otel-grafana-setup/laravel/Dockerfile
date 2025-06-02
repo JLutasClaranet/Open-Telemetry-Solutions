@@ -25,8 +25,7 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # Generate application key and optimize
-RUN cp .env.example .env && \
-    php artisan key:generate && \
+RUN php artisan key:generate && \
     php artisan optimize
 
 # Set correct permissions

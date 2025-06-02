@@ -14,7 +14,7 @@ class ObservabilityController extends BaseController
         Log::info('Root endpoint accessed', [
             'endpoint' => '/',
             'http.method' => $request->method(),
-            'organization.name' => 'XPTO Corp'
+            'organization.name' => config('observability.organization_name')
         ]);
         return response()->json(['message' => 'Hello from Laravel']);
     }
@@ -27,7 +27,7 @@ class ObservabilityController extends BaseController
 
         Log::info('Triggered manual span', [
             'endpoint' => '/trigger',
-            'organization.name' => 'XPTO Corp'
+            'organization.name' => config('observability.organization_name')
         ]);
 
         $span->end();
@@ -47,7 +47,7 @@ class ObservabilityController extends BaseController
 
         Log::info('Manual span with custom context triggered', [
             'endpoint' => '/trigger-context',
-            'organization.name' => 'XPTO Corp'
+            'organization.name' => config('observability.organization_name')
         ]);
 
         $span->end();
@@ -60,7 +60,7 @@ class ObservabilityController extends BaseController
     {
         Log::info('Health check accessed', [
             'endpoint' => '/health',
-            'organization.name' => 'XPTO Corp'
+            'organization.name' => config('observability.organization_name')
         ]);
 
         return response()->json(['status' => 'healthy']);

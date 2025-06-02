@@ -40,14 +40,16 @@ class ObservabilityServiceProvider extends ServiceProvider
         $clock = ClockFactory::getDefault();
         //resource
         $resource = ResourceInfoFactory::defaultResource()->merge(ResourceInfo::create(Attributes::create([
-            ResourceAttributes::SERVICE_NAMESPACE => 'XPTO Corp',
-            ResourceAttributes::SERVICE_NAME => 'laravel-app',
-            ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => 'development',
-            'organization.name' => 'XPTO Corp',
+            ResourceAttributes::SERVICE_NAMESPACE => config('observability.service_namespace'),
+            ResourceAttributes::SERVICE_NAME => config('observability.service_name'),
+            ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => config('observability.deployment_environment'),
+            'organization.name' => config('observability.organization_name'),
         ])));
 
+       
+
         //trace transporter
-        $traceTransport = (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/traces', 'application/x-protobuf');
+        $traceTransport = (new OtlpHttpTransportFactory())->create(config('observability.otel_collector_traces_url'), 'application/x-protobuf');
         // // Tracer setup
 
         $traceExporter = new SpanExporter($traceTransport);
@@ -62,7 +64,7 @@ class ObservabilityServiceProvider extends ServiceProvider
 
         //LOGS
          // Logger setup
-         $logsTransport = (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/logs', 'application/x-protobuf');
+         $logsTransport = (new OtlpHttpTransportFactory())->create(config('observability.otel_collector_logs_url'), 'application/x-protobuf');
          $logExporter = new LogsExporter($logsTransport);
  
          $loggerProvider = LoggerProvider::builder()
@@ -75,7 +77,7 @@ class ObservabilityServiceProvider extends ServiceProvider
         //METRICS
         $reader = new ExportingReader(
             new MetricExporter(
-                (new OtlpHttpTransportFactory())->create('http://otel-collector:4318/v1/metrics', 'application/x-protobuf')
+                (new OtlpHttpTransportFactory())->create(config('observability.otel_collector_metrics_url'), 'application/x-protobuf')
             )
         );
         

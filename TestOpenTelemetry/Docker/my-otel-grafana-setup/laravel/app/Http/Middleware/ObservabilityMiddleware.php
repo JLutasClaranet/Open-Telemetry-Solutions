@@ -23,7 +23,7 @@ class ObservabilityMiddleware
 
         $span->setAttribute('http.method', $request->method());
         $span->setAttribute('http.route', $request->path());
-        $span->setAttribute('organization.name', 'XPTO Corp');
+        $span->setAttribute('organization.name', config('observability.organization_name'));
 
         $response = $next($request);
 
@@ -41,7 +41,7 @@ class ObservabilityMiddleware
             'http.status_code' => $response->status(),
             'duration_ms' => $latency,
             'remote_ip' => $request->ip(),
-            'organization.name' => 'XPTO Corp'
+            'organization.name' => config('observability.organization_name')
         ]);
 
         return $response;
