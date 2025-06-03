@@ -67,16 +67,16 @@ services:
     networks:
       - otel-collector
 
-  # fastapi-app:
-  #   build: ./fastapi-app
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
-  #   depends_on:
-  #     - otel-collector
-  #   networks:
-  #     - otel-collector
+  fastapi-app:
+    build: ./fastapi-app
+    ports:
+      - "8000:8000"
+    environment:
+     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+    depends_on:
+     - otel-collector
+    networks:
+      - otel-collector
 
   # --- AQUI COMEÇA O STACK LARAVEL ---
   laravel_app:

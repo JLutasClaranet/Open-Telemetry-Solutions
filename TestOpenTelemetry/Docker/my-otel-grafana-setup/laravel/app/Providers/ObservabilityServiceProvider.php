@@ -28,6 +28,8 @@ use OpenTelemetry\SDK\Logs\LoggerProvider;
 use OpenTelemetry\Contrib\Otlp\LogsExporter;
 use OpenTelemetry\SDK\Logs\Processor\BatchLogRecordProcessor;
 
+
+
 //METERS
 use OpenTelemetry\SDK\Metrics\MeterProvider;
 use OpenTelemetry\SDK\Metrics\MetricReader\ExportingReader;
@@ -73,6 +75,13 @@ class ObservabilityServiceProvider extends ServiceProvider
                 new BatchLogRecordProcessor($logExporter, $clock)
             )
             ->build();
+
+          /*   $logRecord = new LogRecord(
+                body: 'This is a test log from OTEL'
+            );
+
+            $logger = $loggerProvider->getLogger('otel-test');
+            $logger->emit($logRecord); */
 
         //METRICS
         $reader = new ExportingReader(
