@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use OpenTelemetry\API\Globals;
 use Illuminate\Support\Facades\Log;
+use OpenTelemetry\API\Metrics\CounterInterface;
+use OpenTelemetry\API\Metrics\HistogramInterface;
 
 //logs
 use OpenTelemetry\API\Logs\LogRecord;
@@ -14,6 +16,10 @@ use OpenTelemetry\SDK\Common\Attribute\Attributes;
 
 class ObservabilityController extends BaseController
 {
+
+    private static ?CounterInterface $user_Info_Counter = null;
+    private static ?HistogramInterface $process_duration_Histogram = null;
+
     public function root(Request $request)
     {
         Log::info('Root endpoint accessed', [
@@ -54,6 +60,7 @@ class ObservabilityController extends BaseController
 
     public function triggerContext(Request $request)
     {
+        $start = microtime(true);
         $tracer = Globals::tracerProvider()->getTracer('laravel');
         $meter = Globals::meterProvider()->getMeter('laravel');
 
@@ -63,31 +70,38 @@ class ObservabilityController extends BaseController
         $span->setAttribute('user.id', '12345');
         $span->setAttribute('session.id', 'abcde');
 
-            // Create or get Prometheus counter
-            $counter = $meter->createCounter('user_logged');
-            $counter->add(1, [
-                'user.id' => 'Jorge Andrade',
-                'session.id' => '11111'
-            ]);
-
-            $counter->add(1, [
-                    'user.id' => 'Miguel Barbosa',
-                    'session.id' => '22222'
-            ]);
-
-            $counter->add(1, [
-                'user.id' => 'Filipe Santos',
-                'session.id' => '33333'
-            ]);
-
-            $counter->add(1, [
-                'user.id' => 'Filipe Santos',
-                'session.id' => '33333'
-            ]);
+        // Create or get Prometheus counter
+        if (is_null(self::$user_Info_Counter)) {
+            self::$user_Info_Counter = $meter->createCounter('user_info_total');
+        }
+    
+        self::$user_Info_Counter->add(1, [
+            'method' => $request->method(),
+            'route' => $request->path(),
+            'user_name' => "Jorge",
+            'user_location' => "Portugal",
+            'organization' => config('observability.organization_name')
+        ]);
 
         Log::info('Manual span with custom context triggered', [
             'endpoint' => '/trigger-context',
             'organization.name' => config('observability.organization_name')
+        ]);
+
+        if (is_null(self::$process_duration_Histogram)) {
+            self::$process_duration_Histogram = $meter->createHistogram('process_duration_ms');
+        }
+
+        // Simulated logic
+        usleep(500000); // 50ms
+        $duration = (microtime(true) - $start) * 1000;
+
+        self::$process_duration_Histogram->record($duration, [
+            'method' => $request->method(),
+            'route' => $request->path(),
+            'operation' => "Email-Generator",
+            'status' => "fail",
+            'organization' => config('observability.organization_name')
         ]);
 
         $span->end();
@@ -102,24 +116,39 @@ class ObservabilityController extends BaseController
         $logger = Globals::loggerProvider()->getLogger('laravel');
         $meter = Globals::meterProvider()->getMeter('laravel');
 
-        // Track hits to this endpoint
-        $counter = $meter->createCounter('health_trigger_hits_total');
-        $counter->add(1, [
-            'endpoint' => '/health',
-            'organization.name' => config('observability.organization_name'),
+        // Create or get Prometheus counter
+        if (is_null(self::$user_Info_Counter)) {
+            self::$user_Info_Counter = $meter->createCounter('user_info_total');
+        }
+    
+        self::$user_Info_Counter->add(1, [
+            'method' => $request->method(),
+            'route' => $request->path(),
+            'user_name' => "Miguel",
+            'user_location' => "Espanha",
+            'organization' => config('observability.organization_name')
         ]);
 
-        $histogram = $meter->createHistogram('custom_logic_health_duration_ms');
+      
         
 
         // Simulated logic
         usleep(50000); // 50ms
 
         $duration = (microtime(true) - $start) * 1000;
-        $histogram->record($duration, [
-            'operation' => 'simulate_logic_time_health',
-            'organization.name' => config('observability.organization_name'),
+
+        if (is_null(self::$process_duration_Histogram)) {
+            self::$process_duration_Histogram = $meter->createHistogram('process_duration_ms');
+        }
+
+        self::$process_duration_Histogram->record($duration, [
+            'method' => $request->method(),
+            'route' => $request->path(),
+            'operation' => "Email-Generator",
+            'status' => "success",
+            'organization' => config('observability.organization_name')
         ]);
+
 
         $logRecord = (new LogRecord('Health check accessed'))
         ->setAttributes(Attributes::create([

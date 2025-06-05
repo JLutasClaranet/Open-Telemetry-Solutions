@@ -53,7 +53,7 @@ class ObservabilityMiddleware
         $scope->detach();
 
         // Create or get Prometheus counter
-        //$counter = $meter->createCounter('http_requests_total');
+        
         if (is_null(self::$httpRequestCounter)) {
             self::$httpRequestCounter = $meter->createCounter('http_requests_total');
         }
@@ -67,7 +67,7 @@ class ObservabilityMiddleware
 
         $duration = (microtime(true) - $start) * 1000;
 
-        //$histogram = $meter->createHistogram('http_request_duration_ms');
+       
         if (is_null(self::$httpDurationHistogram)) {
             self::$httpDurationHistogram = $meter->createHistogram('http_request_duration_ms');
         }
