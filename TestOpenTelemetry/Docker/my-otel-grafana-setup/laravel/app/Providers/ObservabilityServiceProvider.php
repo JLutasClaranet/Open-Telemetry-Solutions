@@ -34,9 +34,14 @@ use OpenTelemetry\SDK\Logs\Processor\BatchLogRecordProcessor;
 use OpenTelemetry\SDK\Metrics\MeterProvider;
 use OpenTelemetry\SDK\Metrics\MetricReader\ExportingReader;
 use OpenTelemetry\Contrib\Otlp\MetricExporter;
+use OpenTelemetry\API\Metrics\ObserverInterface;
+
 
 class ObservabilityServiceProvider extends ServiceProvider
 {
+
+    private static bool $gaugeInitialized = false;
+
     public function register(): void
     {
         $clock = ClockFactory::getDefault();
@@ -96,6 +101,20 @@ class ObservabilityServiceProvider extends ServiceProvider
             ->addReader($reader)
             ->build();
 
+        $meter = $meterProvider->getMeter('laravel');
+
+        if (!self::$gaugeInitialized) {
+            $meter->createObservableGauge('memory_usage_bytes')->observe(
+                function (ObserverInterface $observer) {
+                    $observer->observe(
+                        memory_get_usage(true),
+                        ['metric.type' => 'php.memory']
+                    );
+                }
+            );
+        
+            self::$gaugeInitialized = true;
+        }
 
         //FULL BUILD
         Sdk::builder()

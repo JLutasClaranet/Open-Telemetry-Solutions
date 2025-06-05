@@ -49,7 +49,7 @@ resource = Resource(attributes={
 # ----------------------------------------
 trace_provider = TracerProvider(resource=resource)
 trace.set_tracer_provider(trace_provider)
-span_exporter = OTLPSpanExporter(endpoint="http://otel-collector:4318/v1/traces")
+span_exporter = OTLPSpanExporter(endpoint="http://10.35.105.252:4318/v1/traces")
 span_processor = BatchSpanProcessor(span_exporter)
 trace_provider.add_span_processor(span_processor)
 
@@ -58,7 +58,7 @@ trace_provider.add_span_processor(span_processor)
 # ----------------------------------------
 log_provider = LoggerProvider(resource=resource)
 set_logger_provider(log_provider)
-log_exporter = OTLPLogExporter(endpoint="http://otel-collector:4318/v1/logs")
+log_exporter = OTLPLogExporter(endpoint="http://10.35.105.252:4318/v1/logs")
 log_processor = BatchLogRecordProcessor(log_exporter)
 log_provider.add_log_record_processor(log_processor)
 otel_handler = LoggingHandler(level=logging.INFO, logger_provider=log_provider)
@@ -70,7 +70,7 @@ logger = logging.getLogger("fastapi-app")
 # ----------------------------------------
 # METRICS Setup
 # ----------------------------------------
-metric_exporter = OTLPMetricExporter(endpoint="http://otel-collector:4318/v1/metrics")
+metric_exporter = OTLPMetricExporter(endpoint="http://10.35.105.252:4318/v1/metrics")
 metric_reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=60000)
 meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
 metrics.set_meter_provider(meter_provider)

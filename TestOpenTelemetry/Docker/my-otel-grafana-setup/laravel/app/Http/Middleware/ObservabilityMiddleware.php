@@ -6,18 +6,27 @@ use Closure;
 use Illuminate\Http\Request;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Metrics\CounterInterface;
+use OpenTelemetry\API\Metrics\HistogramInterface;
 use Illuminate\Support\Facades\Log;
 use OpenTelemetry\API\Logs\LogRecord;
 use OpenTelemetry\SDK\Common\Attribute\Attributes;
 
 class ObservabilityMiddleware
 {
+
+    private static ?CounterInterface $httpRequestCounter = null;
+    private static ?HistogramInterface $httpDurationHistogram = null;
+    
+
     public function handle(Request $request, Closure $next)
     {
         $start = microtime(true);
         $tracer = Globals::tracerProvider()->getTracer('laravel');
         $meter = Globals::meterProvider()->getMeter('laravel');
         $logger = Globals::loggerProvider()->getLogger('laravel');
+
+        
 
         $span = $tracer->spanBuilder($request->path())
             ->setSpanKind(SpanKind::KIND_SERVER)
@@ -44,8 +53,12 @@ class ObservabilityMiddleware
         $scope->detach();
 
         // Create or get Prometheus counter
-        $counter = $meter->createCounter('http_requests_total');
-        $counter->add(1, [
+        //$counter = $meter->createCounter('http_requests_total');
+        if (is_null(self::$httpRequestCounter)) {
+            self::$httpRequestCounter = $meter->createCounter('http_requests_total');
+        }
+
+        self::$httpRequestCounter->add(1, [
             'method' => $request->method(),
             'route' => $request->path(),
             'status_code' => $response->status(),
@@ -54,8 +67,12 @@ class ObservabilityMiddleware
 
         $duration = (microtime(true) - $start) * 1000;
 
-        $histogram = $meter->createHistogram('http_request_duration_ms');
-        $histogram->record($duration, [
+        //$histogram = $meter->createHistogram('http_request_duration_ms');
+        if (is_null(self::$httpDurationHistogram)) {
+            self::$httpDurationHistogram = $meter->createHistogram('http_request_duration_ms');
+        }
+
+        self::$httpDurationHistogram->record($duration, [
             'method' => $request->method(),
             'route' => $request->path(),
             'status_code' => $response->status(),
