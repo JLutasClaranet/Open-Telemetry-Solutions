@@ -50,7 +50,9 @@ class ObservabilityServiceProvider extends ServiceProvider
             ResourceAttributes::SERVICE_NAMESPACE => config('observability.service_namespace'),
             ResourceAttributes::SERVICE_NAME => config('observability.service_name'),
             ResourceAttributes::DEPLOYMENT_ENVIRONMENT_NAME => config('observability.deployment_environment'),
+            ResourceAttributes::SERVICE_INSTANCE_ID => gethostname(),
             'organization.name' => config('observability.organization_name'),
+            
         ])));
 
        
